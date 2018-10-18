@@ -10,6 +10,8 @@ from telebot import types
 
 bot = telebot.TeleBot("651775329:AAGA5pCtTrlfbYnCalmhKUwGLrVrTjOWOxY")
 
+#global variables
+
 global questioning
 questioning = False
 global voting
@@ -20,6 +22,15 @@ global justVoted
 justVoted = False
 global gameOn
 gameOn = False
+
+#lists
+
+# Answers given to a question
+givenAnswers = list()
+myAnswers = list()
+gameQuestions = list()
+joinedPeople = list()
+
 
 # Create a string list and build it with append calls.
 allQuestions = list()
@@ -82,28 +93,43 @@ allAnswers.append("boquinha de bode")
 allAnswers.append("cu de cachorro")
 
 
+class joinedPerson():
+    def __init__(self, name, id):
+        self.name = name
+        self.id = id
 
-
-# Answers given to a question
-givenAnswers = list()
-myAnswers = list()
-gameQuestions = list()
 
 #Handlers
 
+@bot.message_handler(commands=['join'])
+def send_join(message):
+    if (message.chat.first_name, message.chat.id) not in joinedPeople:   #erro
+        joinedPeople.append(joinedPerson(message.chat.first_name, message.chat.id))
+        bot.send_message(message.chat.id, message.chat.first_name + " entrou na brincadeira!")
+    else:
+        bot.send_message(message.chat.id, "Tu já tá, fera!")
+
+
+@bot.message_handler(commands=['showJoined'])
+def send_show_joined(message):
+    bot.send_message(message.chat.id, "Lista de jogadores:")
+    for person in joinedPeople:
+        bot.send_message(message.chat.id, "Nome: " + person.name + " ID: " + str(person.id))
+
+
 @bot.message_handler(commands=['about'])
-def send_welcome(message):
+def send_about(message):
     bot.send_message(message.chat.id, """Bot para jogar "Cards Against Humanity" mas com um nome menos agressivo.""")
     bot.send_message(message.chat.id, "by: Mateus Villas Boas")
 
 @bot.message_handler(commands=['start'])
-def send_welcome(message):
+def send_start(message):
     global gameOn
     gameOn = True
     bot.send_message(message.chat.id, "Prontos ou não, começou o jogo!")
 
 @bot.message_handler(commands=['stop'])
-def send_welcome(message):
+def send_stop(message):
     global gameOn
     if gameOn:
         gameOn = False
@@ -112,7 +138,7 @@ def send_welcome(message):
         bot.send_message(message.chat.id, "Já nem tinha começado, otário!")
 
 @bot.message_handler(commands=['banco_perguntas'])
-def send_welcome(message):
+def send_banco_perguntas(message):
     if len(gameQuestions) != len(allQuestions):
         bot.send_message(message.chat.id, "Inicializando Banco de Perguntas!")
         inicialize_gameQuestions()
