@@ -25,6 +25,7 @@ gameOn = False
 sizeOfHand = 5 #quantidade de cartas que se pode ter na mão
 global markup
 #lists
+global choosenPhrase
 
 # Answers given to a question
 givenAnswers = list()
@@ -130,8 +131,7 @@ def send_question(message):
     bot.send_message(message.chat.id, currentQuestion, parse_mode= 'HTML')
 
     markup = types.ReplyKeyboardMarkup(row_width=1, one_time_keyboard=True)
-    for answer in myAnswers:
-        markup.add(types.KeyboardButton(answer))
+    update_keyboard()
     bot.send_message(message.chat.id, "Cartas de perguntas restantes: " + str(len(gameQuestions)))
     bot.send_message(message.chat.id, "<b>Escolha sua resposta:</b>", reply_markup=markup, parse_mode= 'HTML')
 
@@ -141,6 +141,7 @@ def handle_texts(message):
     global questioning, voting
     global currentQuestion
     global justVoted
+    global choosenPhrase
 
     def voting_mode():
         global justVoted
@@ -158,11 +159,19 @@ def handle_texts(message):
     else:
         if questioning:
             if (message.text) in myAnswers:
-                bot.send_message(message.chat.id, currentQuestion.replace("___","<b>" + message.text + "</b>"), parse_mode= 'HTML')
+                currentQuestion = currentQuestion.replace("___","<b>" + message.text + "</b>", 1)
                 myAnswers.remove(message.text) #tira a resposta dada
                 add_one_answer() #pega mais uma carta de resposta
                 givenAnswers.append(message.text)
-                questioning = False
+                if "___" in currentQuestion:
+                    bot.send_message(message.chat.id, currentQuestion, parse_mode= 'HTML')
+                    update_keyboard()
+                    bot.send_message(message.chat.id, "<b>Escolha mais uma resposta:</b>", reply_markup=markup, parse_mode= 'HTML')
+                else:
+                    bot.send_message(message.chat.id, "Frase completa:", parse_mode= 'HTML')
+                    bot.send_message(message.chat.id, currentQuestion, parse_mode= 'HTML')
+                    questioning = False
+
                 #voting = True
                 #voting_mode()
 #            else:
@@ -172,6 +181,10 @@ def handle_texts(message):
 #            bot.send_message(message.chat.id, "Calma jovem! Espere a pergunta!")
 
 #functions
+
+def update_keyboard():
+    for answer in myAnswers:
+        markup.add(types.KeyboardButton(answer))
 
 #inicializa e enche a lista de perguntas
 def inicialize_gameQuestions():
