@@ -1,130 +1,114 @@
-# Create a string list and build it with append calls.
-#questions = list()
-#questions.append("Se eu fosse presidente, o meu primeiro feito seria ___")
-#questions.append("Minha manhã não está completa sem um belo como de ___")
-#questions.append("Minha filha, tome cuidado, os garotos de hoje em dia só pensam em ___")
-
-# Display individual strings.
-#for question in questions:
-#    print(question)
-
-#def send_question(chat_id):
-#    text = questions[random.randint(0, 2)]
-#    url = URL + "sendMessage?text={}&chat_id={}".format(text, chat_id)
-#    get_url(url)
-
-
-
 import json
 import requests
 import time
 import urllib
-
+import telebot
 import config
 import random
+from telebot import types
 
-TOKEN = "651775329:AAGA5pCtTrlfbYnCalmhKUwGLrVrTjOWOxY"
-URL = "https://api.telegram.org/bot{}/".format(TOKEN)
+bot = telebot.TeleBot("651775329:AAGA5pCtTrlfbYnCalmhKUwGLrVrTjOWOxY")
 
-#NEW
+global questioning
+questioning = False
+global voting
+voting = False
+global currentQuestion
+currentQuestion = " "
 
 # Create a string list and build it with append calls.
-questions = list()
-questions.append("Se eu fosse presidente, o meu primeiro feito seria ___")
-questions.append("Minha manhã não está completa sem um belo como de ___")
-questions.append("Minha filha, tome cuidado, os garotos de hoje em dia só pensam em ___")
-questions.append("Eu bebo para esquecer ___")
-questions.append("Pai, porque a mamãe ta chorado? ___")
-questions.append("Ei gatinha, vamos pra minha casa que eu te mostro ___")
-questions.append("Com grandes poderes vem grandes ___")
+allQuestions = list()
+allQuestions.append(" Se eu fosse presidente, o meu primeiro feito seria ___")
+#allQuestions.append("Minha manhã não está completa sem um belo copo de ___")
+#allQuestions.append("Minha filha, tome cuidado, os garotos de hoje em dia só pensam em ___")
+#allQuestions.append("Eu bebo para esquecer ___")
+#allQuestions.append("Pai, porque a mamãe ta chorado? ___")
+#allQuestions.append("Ei gatinha, vamos pra minha casa que eu te mostro ___")
+#allQuestions.append("Com grandes poderes vem grandes ___")
+#allQuestions.append("___ + ___ = ___")
+allQuestions.append("___, ___ e ___ esses são os ingredientes para criar as garotinhas perfeitas")
+allQuestions.append("Garçom, tem ___ na minha sopa")
+#allQuestions.append("Você sabia que ___ é gay?")
+#allQuestions.append("""no inicio havia ___, e então Deus falou "que se faça ___""")
+#allQuestions.append("Tem ___ na minha bota!")
 
-# ANSWERS
-answers = list()
-answers.append("Arroz com Feijão")
-answers.append("Eri Johnson")
-answers.append("KiDoguinho")
-answers.append("Um baita de um matusquela xarope")
-answers.append("Ronaldo")
-answers.append("Menstruação")
-answers.append("Mamilos de Sócrates")
+# allAnswers
+allAnswers = list()
+allAnswers.append("Arroz com Feijão")
+allAnswers.append("Eri Johnson")
+allAnswers.append("KiDoguinho")
+allAnswers.append("Um baita de um matusquela xarope")
+allAnswers.append("Ronaldo")
+allAnswers.append("Menstruação")
+allAnswers.append("Mamilos de Sócrates")
+allAnswers.append("Shrek 2")
+allAnswers.append("Caldo de Carne")
 
-Onoff = True
+# Answers given to a question
+answersGiven = list()
+gameQuestions = list()
 
-def send_question(chat_id):
-    text = questions[random.randint(0, len(questions)-1)]
-    url = URL + "sendMessage?text={}&chat_id={}".format(text, chat_id)
-    get_url(url)
+#Handlers
 
-
-def build_keyboard(answers):
-    keyboard = [[answer] for answer in answers]
-    #reply_markup = {"keyboard":keyboard, "one_time_keyboard": True}
-    #return json.dumps(reply_markup)
-
-#OLD
-
-def get_url(url):
-    response = requests.get(url)
-    content = response.content.decode("utf8")
-    return content
+@bot.message_handler(commands=['start', 'help'])
+def send_welcome(message):
+    bot.send_message(message.chat.id, "Howdy, how are you doing?")
 
 
-def get_json_from_url(url):
-    content = get_url(url)
-    js = json.loads(content)
-    return js
+@bot.message_handler(commands=['pergunta'])
+def send_question(message):
+    global questioning
+    global currentQuestion
+    questioning = True
+    currentQuestion = allQuestions[random.randint(0, len(allQuestions)-1)]
+    bot.send_message(message.chat.id, currentQuestion, parse_mode= 'HTML')
+
+    markup = types.ReplyKeyboardMarkup(row_width=1)
+    for answer in allAnswers:
+        markup.add(types.KeyboardButton(answer))
+    bot.send_message(message.chat.id, "Escolha sua resposta:", reply_markup=markup)
 
 
-def get_updates(offset=None):
-    url = URL + "getUpdates"
-    if offset:
-        url += "?offset={}".format(offset)
-    js = get_json_from_url(url)
-    return js
+@bot.message_handler(content_types=['text'])
+def handle_texts(message):
+    global questioning, voting
+    global currentQuestion
+    if questioning:
+        if message.text in allAnswers:
+            #str = allQuestions[random.randint(0, len(allQuestions)-1)]
+            #str.replace("___", message.text)
+            bot.send_message(message.chat.id, currentQuestion.replace("___","<b>" + message.text + "</b>"), parse_mode= 'HTML')
+            allAnswers.remove(message.text)
+            answersGiven.append(message.text)
+            questioning = False
+            voting = True
+        else:
+            bot.send_message(message.chat.id, "Desculpe mas sua resposta não é uma resposta válida")
+            #bot.reply_to(message, "Desculpe mas sua resposta não é uma resposta válida")
+    else:
+        if voting:
+            markup = types.ReplyKeyboardMarkup(row_width=1)
+            for answer in answersGiven:
+                markup.add(types.KeyboardButton(answer))
+            bot.send_message(message.chat.id, "Qual a melhor resposta?", reply_markup=markup)
 
+        else:
+            bot.send_message(message.chat.id, "Calma jovem! Espere a pergunta!")
 
-def get_last_update_id(updates):
-    update_ids = []
-    for update in updates["result"]:
-        update_ids.append(int(update["update_id"]))
-    return max(update_ids)
+bot.polling()
 
+#functions
 
-def echo_all(updates):
-    for update in updates["result"]:
-        text = update["message"]["text"]
-        chat = update["message"]["chat"]["id"]
-        send_message(text, chat)
+#inicializa e enche a lista de perguntas
+def inicialize_gameQuestions():
+    for question in allQuestions
+        gameQuestions.append(question)
 
-
-def get_last_chat_id_and_text(updates):
-    num_updates = len(updates["result"])
-    last_update = num_updates - 1
-    text = updates["result"][last_update]["message"]["text"]
-    chat_id = updates["result"][last_update]["message"]["chat"]["id"]
-    return (text, chat_id)
-
-
-def send_message(text, chat_id):
-    text = urllib.parse.quote_plus(text)
-    url = URL + "sendMessage?text={}&chat_id={}".format(text, chat_id)
-    get_url(url)
-
-def start(bot, update):
-    kb = [[telegram.KeyboardButton("Option 1")], [telegram.KeyboardButton("Option 2")]]
-    kb_markup = telegram(chat_id=update.message.chat_id, text="your message", reply_markup=kb_markup)
-
-    start_handler = RegexHandler('some-regex-here', start)
-    dispatcher.add_handler(start_handler)
-
-def teclad():
-    send_question(126943320)
-    send_question(126943320)
 
 def main():
-    #keyboard = build_keyboard(answers)
+    #keyboard = build_keyboard(allAnswers)
     while(True):
-        #keyboard = build_keyboard(answers)
+        #keyboard = build_keyboard(allAnswers)
         #send_question(126943320)
         time.sleep(0.5)
 
